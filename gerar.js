@@ -57,12 +57,11 @@ function viewGerar() {
       <span class="gen-p">${ok ? `Abrir “${esc(a.projeto)}” ↗` : 'Link não configurado'}</span>
     </button>`;
   }).join('')}</div>
-  <div class="alert warn">
-    <div class="grow"><b>⏳ Ainda falta ligar o app ao banco na nuvem (Supabase).</b><br>
-    <span class="small">Até lá, o Claude não consegue lançar no app sozinho. Os atalhos já abrem os projetos, mas os cards ainda precisam ser trazidos pelo modo manual em <b>Avançado</b>, aqui embaixo.</span></div>
-  </div>
+  <p class="muted small">Com a nuvem ligada, o que o Claude salvar aparece aqui sozinho (em até 1 minuto ou ao abrir o app).</p>
   <h2>Configuração</h2>
   <div class="list">
+    <div class="item click" data-nav="conta"><div class="grow"><div class="title">☁ Nuvem e 🔔 lembretes</div>
+      <div class="meta">Login, sincronização entre aparelhos e notificações de revisão.</div></div><span class="chev">›</span></div>
     <div class="item click" data-act="cl-links"><div class="grow"><div class="title">🔗 Links dos projetos do Claude</div>
       <div class="meta">Já configurados com as conversas do projeto ESTUDOS. Toque para trocar algum.</div></div><span class="chev">›</span></div>
   </div>

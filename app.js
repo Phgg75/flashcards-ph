@@ -196,14 +196,15 @@ const NAV = [
   { v: 'errors', ico: '✎', label: 'Erros', count: () => dueOf(null, 'erro').length },
   { v: 'edital', ico: '☑', label: 'Edital' },
   { v: 'ciclo', ico: '◷', label: 'Ciclo' },
+  { v: 'lembretes', ico: '🔔', label: 'Lembretes', short: 'Avisos' },
   { v: 'gerar', ico: '✨', label: 'Gerar' },
 ];
 function renderNav() {
-  const html = NAV.map(n => {
+  const html = short => NAV.map(n => {
     const c = n.count ? n.count() : 0;
-    return `<button data-nav="${n.v}" class="${S.view === n.v ? 'active' : ''}"><span class="ico">${n.ico}</span><span>${n.label}</span>${c ? `<span class="count">${c}</span>` : ''}</button>`;
+    return `<button data-nav="${n.v}" class="${S.view === n.v ? 'active' : ''}"><span class="ico">${n.ico}</span><span>${short && n.short ? n.short : n.label}</span>${c ? `<span class="count">${c}</span>` : ''}</button>`;
   }).join('');
-  $('#nav-side').innerHTML = html; $('#nav-bottom').innerHTML = html;
+  $('#nav-side').innerHTML = html(false); $('#nav-bottom').innerHTML = html(true);
   $('#side-foot').innerHTML = `${S.cards.length} cards · ${S.folders.filter(f => !f.parentId).length} matérias<br>${typeof syncFoot === 'function' ? syncFoot() : 'Dados salvos neste aparelho'}`;
 }
 // Navegação com histórico: o botão "Voltar" do app, o voltar do navegador e o gesto/botão do celular funcionam igual.
@@ -250,7 +251,7 @@ function backBar() {
 }
 function render() {
   renderNav();
-  const v = { home: viewHome, review: viewReview, folders: viewFolders, errors: viewErrors, edital: viewEdital, ciclo: viewCiclo, gerar: viewGerar, import: viewGerar, conta: viewConta }[S.view] || viewHome;
+  const v = { home: viewHome, review: viewReview, folders: viewFolders, errors: viewErrors, edital: viewEdital, ciclo: viewCiclo, gerar: viewGerar, import: viewGerar, conta: viewConta, lembretes: viewLembretes }[S.view] || viewHome;
   $('#view').innerHTML = backBar() + v();
   if (S.view === 'folders') bindSearch();
 }
@@ -266,7 +267,10 @@ function viewHome() {
   <p class="sub">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
   ${typeof SYNC_USER !== 'undefined' && !SYNC_USER && typeof sb !== 'undefined' && sb ? `<div class="alert warn" style="margin:0 0 14px"><div class="grow"><b>☁ Entre na nuvem</b>
     <span class="small">para ter tudo igual no computador e no iPhone, e para o Claude lançar os cards aqui sozinho.</span></div>
-    <button class="btn" data-nav="conta">Entrar</button></div>` : ''}
+    <button class="btn" data-nav="conta">Entrar</button></div>`
+  : typeof PUSH !== 'undefined' && PUSH.loaded && !PUSH.ativo && SYNC_USER ? `<div class="alert good" style="margin:0 0 14px"><div class="grow"><b>🔔 Ative os lembretes de revisão</b>
+    <span class="small">e receba no celular os cards pendentes e o dia do ciclo.</span></div>
+    <button class="btn" data-nav="lembretes">Ativar</button></div>` : ''}
   ${late.length ? `<div class="alert bad" style="margin:0 0 14px"><div class="grow"><b>⚠ ${late.length} ${late.length === 1 ? 'flashcard atrasado' : 'flashcards atrasados'}</b>
     <span class="small">(o mais antigo há ${maxLate} ${maxLate === 1 ? 'dia' : 'dias'}). Eles entram primeiro na revisão.</span></div>
     <button class="btn" data-act="start" data-mode="due">Revisar agora</button></div>` : ''}

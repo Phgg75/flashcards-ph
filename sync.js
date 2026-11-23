@@ -87,7 +87,7 @@ async function syncStart() {
       void keep;
     }
     if (u) { SY.userId = u.id; saveSY(); }
-    if (changed) { refreshUI(); if (u) syncNow(); }
+    if (changed) { refreshUI(); if (u) { syncNow(); loadPush(); } }
   });
   setInterval(() => { if (SYNC_USER && navigator.onLine) syncNow(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && SYNC_USER) syncNow(); });
@@ -275,7 +275,9 @@ function viewConta() {
       <p class="muted small">${SYNC_UI.last ? 'Última sincronização: ' + new Date(SYNC_UI.last).toLocaleString('pt-BR') : 'Ainda não sincronizou nesta sessão.'}
         ${SYNC_UI.err ? `<br>Erro: ${esc(SYNC_UI.err)}` : ''}<br>O app sincroniza sozinho a cada minuto, ao abrir e logo depois de cada alteração.</p>
       <div class="row"><button class="btn primary" data-act="au-sync">Sincronizar agora</button><span class="spacer"></span><button class="btn ghost" data-act="au-logout">Sair</button></div>
-    </div>`;
+    </div>
+    <div class="item click" data-nav="lembretes" style="max-width:520px;margin-top:14px"><div class="grow"><div class="title">🔔 Lembretes de revisão</div>
+      <div class="meta">Escolher horários e ativar as notificações neste aparelho.</div></div><span class="chev">›</span></div>`;
 }
 async function authAction(kind) {
   const email = ($('#au-email')?.value || '').trim(), password = $('#au-pass')?.value || '';
