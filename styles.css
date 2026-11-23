@@ -53,41 +53,47 @@ img { max-width: 100%; }
 
 .main { flex: 1; min-width: 0; padding: 28px 32px 60px; max-width: 1100px; margin: 0 auto; width: 100%; }
 
-.bottom-nav, .nav-more { display: none; }
+.menu-fab, .nav-more, .nav-backdrop { display: none; }
 
-/* Celular: menu flutuante (cápsula solta da borda) + painel "Mais" */
+/* Celular: sem barra no rodapé. Um botão de menu flutuante no topo (ao lado do título)
+   abre um painel flutuante com todas as abas. */
 @media (max-width: 820px) {
   .sidebar { display: none; }
-  .main { padding: 18px 16px calc(110px + env(safe-area-inset-bottom)); }
-  .bottom-nav {
-    display: flex; position: fixed; z-index: 30;
-    left: 14px; right: 14px; bottom: calc(12px + env(safe-area-inset-bottom));
-    max-width: 480px; margin: 0 auto; padding: 6px;
-    background: rgba(28, 31, 40, .82); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, .08); border-radius: 24px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .3);
+  .main { padding: calc(18px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
+  #view > :first-child { margin-right: 60px; }     /* não fica embaixo do botão */
+  .back-bar .btn[data-nav="home"] { display: none; } /* "Início" já está no menu */
+
+  .menu-fab {
+    display: grid; place-items: center; position: fixed; z-index: 35;
+    top: calc(14px + env(safe-area-inset-top)); right: 14px; width: 48px; height: 48px;
+    border-radius: 16px; border: 1px solid rgba(255, 255, 255, .1); cursor: pointer; color: #fff;
+    background: linear-gradient(135deg, #8b5cf6, #4f46e5);
+    box-shadow: 0 8px 24px rgba(79, 70, 229, .45), 0 2px 6px rgba(0, 0, 0, .4);
+    transition: transform .15s, border-radius .2s;
   }
-  .bottom-nav button {
-    flex: 1; min-width: 0; background: none; border: 0; color: var(--muted); display: flex; flex-direction: column;
-    align-items: center; gap: 1px; font-size: 10.5px; padding: 7px 0 6px; position: relative; cursor: pointer;
-    border-radius: 18px; transition: background .2s, color .2s;
+  .menu-fab:active { transform: scale(.94); }
+  .menu-fab.open { border-radius: 50%; }
+  .menu-fab .ico { font-size: 22px; line-height: 1; }
+  .menu-fab .dot { position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--extremo); border: 2px solid #5b4ae8; }
+
+  .nav-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 33; background: rgba(5, 6, 9, .45);
+    opacity: 0; pointer-events: none; transition: opacity .18s;
   }
-  .bottom-nav .ico { font-size: 19px; line-height: 1.2; }
-  .bottom-nav button.active { color: #fff; background: linear-gradient(135deg, rgba(139, 92, 246, .55), rgba(79, 70, 229, .45)); }
-  .bottom-nav .count, .nav-more .count {
-    position: absolute; top: 2px; left: 50%; margin-left: 5px; background: var(--extremo); color: #fff;
-    font-size: 10px; padding: 0 5px; border-radius: 99px; line-height: 16px;
-  }
-  .bottom-nav .dot { position: absolute; top: 6px; left: 50%; margin-left: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--extremo); }
+  .nav-backdrop.open { opacity: 1; pointer-events: auto; }
 
   .nav-more {
-    display: block; position: fixed; z-index: 29; left: 14px; right: 14px; max-width: 480px; margin: 0 auto;
-    bottom: calc(86px + env(safe-area-inset-bottom)); padding: 10px;
-    background: rgba(28, 31, 40, .92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    display: block; position: fixed; z-index: 34; right: 14px; width: min(340px, calc(100% - 28px));
+    top: calc(72px + env(safe-area-inset-top)); padding: 10px;
+    background: rgba(28, 31, 40, .94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     border: 1px solid rgba(255, 255, 255, .08); border-radius: 22px; box-shadow: 0 16px 40px rgba(0, 0, 0, .6);
-    opacity: 0; transform: translateY(16px) scale(.97); pointer-events: none; transition: opacity .18s, transform .18s;
+    transform-origin: top right; opacity: 0; transform: translateY(-8px) scale(.95); pointer-events: none; transition: opacity .18s, transform .18s;
   }
   .nav-more.open { opacity: 1; transform: none; pointer-events: auto; }
+  .nav-more .count {
+    position: absolute; top: 6px; left: 50%; margin-left: 8px; background: var(--extremo); color: #fff;
+    font-size: 10px; padding: 0 5px; border-radius: 99px; line-height: 16px;
+  }
   .nav-more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .nav-more button {
     background: rgba(255, 255, 255, .04); border: 0; border-radius: 16px; color: var(--text); padding: 14px 6px 10px;
@@ -255,7 +261,7 @@ textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px;
   box-shadow: var(--shadow); transition: all .25s; max-width: calc(100% - 32px);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-@media (max-width: 820px) { .toast { bottom: calc(96px + env(safe-area-inset-bottom)); } }
+@media (max-width: 820px) { .toast { bottom: calc(24px + env(safe-area-inset-bottom)); } }
 
 .lightbox { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; padding: 16px; cursor: zoom-out; }
 .lightbox img { max-height: 100%; max-width: 100%; border-radius: 8px; }

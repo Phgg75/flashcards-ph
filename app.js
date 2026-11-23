@@ -208,14 +208,13 @@ function navBtn(n, short) {
 }
 function renderNav() {
   $('#nav-side').innerHTML = NAV.filter(n => !n.sideHidden).map(n => navBtn(n, false)).join('');
-  // Celular: menu flutuante com os principais + "Mais" (abre um painel com o resto)
-  const extra = NAV.filter(n => !n.main);
-  const extraActive = extra.some(n => n.v === S.view);
-  const extraCount = extra.reduce((s, n) => s + (n.count ? n.count() : 0), 0);
-  $('#nav-bottom').innerHTML = NAV.filter(n => n.main).map(n => navBtn(n, true)).join('')
-    + `<button data-act="nav-more" class="${extraActive || NAV_MORE_OPEN ? 'active' : ''}"><span class="ico">${NAV_MORE_OPEN ? '✕' : '☰'}</span><span class="lbl">Mais</span>${extraCount ? '<span class="dot"></span>' : ''}</button>`;
-  $('#nav-more').innerHTML = `<div class="nav-more-grid">${extra.map(n => navBtn(n, true)).join('')}</div>`;
+  // Celular: botão de menu flutuante no topo (ao lado do título) que abre um painel com todas as abas
+  const total = NAV.reduce((s, n) => s + (n.count ? n.count() : 0), 0);
+  $('#menu-fab').innerHTML = `<span class="ico">${NAV_MORE_OPEN ? '✕' : '☰'}</span>${total && !NAV_MORE_OPEN ? '<span class="dot"></span>' : ''}`;
+  $('#menu-fab').classList.toggle('open', NAV_MORE_OPEN);
+  $('#nav-more').innerHTML = `<div class="nav-more-grid">${NAV.map(n => navBtn(n, true)).join('')}</div>`;
   $('#nav-more').classList.toggle('open', NAV_MORE_OPEN);
+  $('#nav-backdrop').classList.toggle('open', NAV_MORE_OPEN);
   $('#side-foot').innerHTML = `${S.cards.length} cards · ${S.folders.filter(f => !f.parentId).length} matérias<br>${typeof syncFoot === 'function' ? syncFoot() : 'Dados salvos neste aparelho'}`;
 }
 // Navegação com histórico: o botão "Voltar" do app, o voltar do navegador e o gesto/botão do celular funcionam igual.
