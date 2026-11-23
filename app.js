@@ -189,22 +189,33 @@ function streak() {
 }
 
 /* ================================ Navegação ================================ */
+// main: aparece direto no menu flutuante do celular; os outros ficam no botão "Mais"
 const NAV = [
-  { v: 'home', ico: '◈', label: 'Início' },
-  { v: 'review', ico: '↻', label: 'Revisar', count: () => dueOf(null).length },
-  { v: 'folders', ico: '▤', label: 'Matérias' },
-  { v: 'errors', ico: '✎', label: 'Erros', count: () => dueOf(null, 'erro').length },
+  { v: 'home', ico: '◈', label: 'Início', main: true },
+  { v: 'review', ico: '↻', label: 'Revisar', main: true, count: () => dueOf(null).length },
+  { v: 'ciclo', ico: '◷', label: 'Ciclo', main: true },
+  { v: 'folders', ico: '▤', label: 'Matérias', main: true },
+  { v: 'errors', ico: '✎', label: 'Caderno de erros', short: 'Erros', count: () => dueOf(null, 'erro').length },
   { v: 'edital', ico: '☑', label: 'Edital' },
-  { v: 'ciclo', ico: '◷', label: 'Ciclo' },
-  { v: 'lembretes', ico: '🔔', label: 'Lembretes', short: 'Avisos' },
-  { v: 'gerar', ico: '✨', label: 'Gerar' },
+  { v: 'lembretes', ico: '🔔', label: 'Lembretes' },
+  { v: 'gerar', ico: '✨', label: 'Gerar com o Claude', short: 'Gerar' },
+  { v: 'conta', ico: '☁', label: 'Nuvem / conta', short: 'Nuvem', sideHidden: true },
 ];
+let NAV_MORE_OPEN = false;
+function navBtn(n, short) {
+  const c = n.count ? n.count() : 0;
+  return `<button data-nav="${n.v}" class="${S.view === n.v ? 'active' : ''}"><span class="ico">${n.ico}</span><span class="lbl">${short && n.short ? n.short : n.label}</span>${c ? `<span class="count">${c}</span>` : ''}</button>`;
+}
 function renderNav() {
-  const html = short => NAV.map(n => {
-    const c = n.count ? n.count() : 0;
-    return `<button data-nav="${n.v}" class="${S.view === n.v ? 'active' : ''}"><span class="ico">${n.ico}</span><span>${short && n.short ? n.short : n.label}</span>${c ? `<span class="count">${c}</span>` : ''}</button>`;
-  }).join('');
-  $('#nav-side').innerHTML = html(false); $('#nav-bottom').innerHTML = html(true);
+  $('#nav-side').innerHTML = NAV.filter(n => !n.sideHidden).map(n => navBtn(n, false)).join('');
+  // Celular: menu flutuante com os principais + "Mais" (abre um painel com o resto)
+  const extra = NAV.filter(n => !n.main);
+  const extraActive = extra.some(n => n.v === S.view);
+  const extraCount = extra.reduce((s, n) => s + (n.count ? n.count() : 0), 0);
+  $('#nav-bottom').innerHTML = NAV.filter(n => n.main).map(n => navBtn(n, true)).join('')
+    + `<button data-act="nav-more" class="${extraActive || NAV_MORE_OPEN ? 'active' : ''}"><span class="ico">${NAV_MORE_OPEN ? '✕' : '☰'}</span><span class="lbl">Mais</span>${extraCount ? '<span class="dot"></span>' : ''}</button>`;
+  $('#nav-more').innerHTML = `<div class="nav-more-grid">${extra.map(n => navBtn(n, true)).join('')}</div>`;
+  $('#nav-more').classList.toggle('open', NAV_MORE_OPEN);
   $('#side-foot').innerHTML = `${S.cards.length} cards · ${S.folders.filter(f => !f.parentId).length} matérias<br>${typeof syncFoot === 'function' ? syncFoot() : 'Dados salvos neste aparelho'}`;
 }
 // Navegação com histórico: o botão "Voltar" do app, o voltar do navegador e o gesto/botão do celular funcionam igual.
@@ -267,10 +278,7 @@ function viewHome() {
   <p class="sub">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
   ${typeof SYNC_USER !== 'undefined' && !SYNC_USER && typeof sb !== 'undefined' && sb ? `<div class="alert warn" style="margin:0 0 14px"><div class="grow"><b>☁ Entre na nuvem</b>
     <span class="small">para ter tudo igual no computador e no iPhone, e para o Claude lançar os cards aqui sozinho.</span></div>
-    <button class="btn" data-nav="conta">Entrar</button></div>`
-  : typeof PUSH !== 'undefined' && PUSH.loaded && !PUSH.ativo && SYNC_USER ? `<div class="alert good" style="margin:0 0 14px"><div class="grow"><b>🔔 Ative os lembretes de revisão</b>
-    <span class="small">e receba no celular os cards pendentes e o dia do ciclo.</span></div>
-    <button class="btn" data-nav="lembretes">Ativar</button></div>` : ''}
+    <button class="btn" data-nav="conta">Entrar</button></div>` : ''}
   ${late.length ? `<div class="alert bad" style="margin:0 0 14px"><div class="grow"><b>⚠ ${late.length} ${late.length === 1 ? 'flashcard atrasado' : 'flashcards atrasados'}</b>
     <span class="small">(o mais antigo há ${maxLate} ${maxLate === 1 ? 'dia' : 'dias'}). Eles entram primeiro na revisão.</span></div>
     <button class="btn" data-act="start" data-mode="due">Revisar agora</button></div>` : ''}
@@ -761,8 +769,10 @@ document.addEventListener('click', async e => {
   if (e.target.closest('#lightbox')) { $('#lightbox').classList.add('hidden'); return; }
   if (e.target.id === 'modal') { closeModal(); return; }
 
+  if (e.target.closest('[data-act="nav-more"]')) { NAV_MORE_OPEN = !NAV_MORE_OPEN; renderNav(); return; }
   const nav = e.target.closest('[data-nav]');
-  if (nav) { go(nav.dataset.nav, nav.dataset.nav === 'folders' ? null : undefined); return; }
+  if (nav) { NAV_MORE_OPEN = false; go(nav.dataset.nav, nav.dataset.nav === 'folders' ? null : undefined); return; }
+  if (NAV_MORE_OPEN && !e.target.closest('#nav-more')) { NAV_MORE_OPEN = false; renderNav(); }
 
   const el = e.target.closest('[data-act]');
   const of = e.target.closest('[data-open-folder]');

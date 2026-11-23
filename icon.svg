@@ -1,6 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0f1115"/>
-  <rect x="118" y="150" width="250" height="180" rx="28" fill="#2a2350" transform="rotate(-10 243 240)"/>
-  <rect x="144" y="182" width="250" height="180" rx="28" fill="#7c5cff"/>
-  <path d="M220 272l34 34 66-72" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset=".55" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#3730a3"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ede9fe"/>
+    </linearGradient>
+    <linearGradient id="chk" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="430" cy="70" r="190" fill="#fff" opacity=".07"/>
+  <!-- cartas de trás -->
+  <rect x="146" y="104" width="236" height="300" rx="38" fill="#fff" opacity=".22" transform="rotate(14 264 254)"/>
+  <rect x="140" y="108" width="236" height="300" rx="38" fill="#fff" opacity=".4" transform="rotate(5 258 258)"/>
+  <!-- carta da frente -->
+  <g transform="rotate(-7 250 262)">
+    <rect x="132" y="112" width="236" height="300" rx="38" fill="url(#face)"/>
+    <rect x="170" y="152" width="96" height="16" rx="8" fill="#c4b5fd"/>
+    <rect x="170" y="182" width="150" height="14" rx="7" fill="#ddd6fe"/>
+    <path d="M186 292l44 44 92-104" fill="none" stroke="url(#chk)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- brilho -->
+  <path d="M396 300l12 30 30 12-30 12-12 30-12-30-30-12 30-12z" fill="#fde68a"/>
 </svg>

@@ -93,10 +93,9 @@ function viewLembretes() {
   </div>
   <h2>O que vem na notificação</h2>
   <div class="card-box lem-preview">
-    <div class="lem-notif"><img src="icon-180.png" alt=""><div><b>📚 Hora de revisar</b><br>
-      <span>12 flashcards para revisar (3 atrasados)</span><br>
-      <span>Ciclo: Semana 1 · Dia 3 (Português, Constitucional)</span></div></div>
-    <p class="muted small" style="margin-bottom:0">Os números são calculados na hora, com os seus cards e o seu ciclo. Tocar na notificação abre o app.</p>
+    <div class="lem-notif"><img src="icon-180.png" alt=""><div><b>🔔 Lembrete</b><br>
+      <span>Você tem revisões de flashcards pendentes.</span></div></div>
+    <p class="muted small" style="margin-bottom:0">Se não houver cards pendentes no dia, a mensagem vira “Lembre-se da sua revisão de flashcards.” Tocar na notificação abre o app.</p>
   </div>`;
 }
 function lemDesc(h) {
