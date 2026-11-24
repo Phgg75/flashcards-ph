@@ -31,7 +31,7 @@ const feitosSemana = () => semanaKeys().reduce((s, x) => s + (S.meta.stats.days[
 function streakMeta() {
   const days = S.meta.stats.days, m = metas().diaria; let n = 0; const d = new Date();
   if ((days[todayKey(d)] || 0) < m) d.setDate(d.getDate() - 1);
-  while ((days[todayKey(d)] || 0) >= m) { n++; d.setDate(d.getDate() - 1); }
+  for (let k = todayKey(d); (days[k] || 0) >= m || ehFolga(k); d.setDate(d.getDate() - 1), k = todayKey(d)) if ((days[k] || 0) >= m) n++;
   return n;
 }
 
@@ -125,7 +125,7 @@ function semanaChart() {
   const mt = metas(), ks = semanaKeys(), hk = todayKey();
   const max = Math.max(mt.diaria, ...ks.map(x => S.meta.stats.days[x.k] || 0));
   return `<div class="forecast week">${ks.map(x => { const n = S.meta.stats.days[x.k] || 0, ok = n >= mt.diaria;
-    return `<div class="col ${x.k === hk ? 'today' : ''}"><div class="n">${n}</div><div class="bar ${ok ? 'ok' : ''}" style="height:${(n / max) * 80}%"></div>
+    return `<div class="col ${x.k === hk ? 'today' : ''}"><div class="n">${!ok && ehFolga(x.k) ? 'folga' : n}</div><div class="bar ${ok ? 'ok' : ''}" style="height:${(n / max) * 80}%"></div>
       <div class="d">${x.k === hk ? 'Hoje' : x.dt.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div></div>`; }).join('')}</div>
     <p class="muted small" style="margin:8px 0 0"><span class="lg-dot ok"></span> bateu a meta de ${mt.diaria} · <span class="lg-dot"></span> abaixo da meta</p>`;
 }
@@ -189,6 +189,65 @@ function viewMetas() {
     Cada card conta 1 vez por dia. Revisar antes da hora e marcar Médio/Fácil não bagunça o agendamento: o card mantém a data que já tinha.</p>`;
 }
 
+/* ------------------------- Dispensar atraso dos flashcards ------------------------- */
+// Dia em que não revisou (ex.: fez muitas questões): os cards atrasados daquele dia
+// voltam para hoje (ou são espalhados em 3 dias), sem mexer no intervalo nem na dificuldade.
+// O dia vira "folga": não quebra os dias seguidos.
+const folgas = () => P().folgas || [];
+const ehFolga = k => folgas().includes(k);
+function atrasoPorDia() {
+  const g = {};
+  lateOf(null).forEach(c => { const k = todayKey(new Date(c.due)); (g[k] = g[k] || []).push(c); });
+  return Object.keys(g).sort().map(k => ({ k, cards: g[k] }));
+}
+const diaTxt = k => new Date(k + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '');
+function alertaAtraso() {
+  const late = lateOf(null); if (!late.length) return '';
+  const maxLate = Math.max(...late.map(lateDays));
+  return `<div class="alert bad" style="margin:0 0 14px"><div class="grow"><b>⚠ ${late.length} ${late.length === 1 ? 'flashcard atrasado' : 'flashcards atrasados'}</b>
+    <span class="small">(o mais antigo há ${maxLate} ${maxLate === 1 ? 'dia' : 'dias'}). Eles entram primeiro na revisão.</span></div>
+    <div class="row"><button class="btn" data-act="start" data-mode="due">Revisar agora</button>
+    <button class="btn ghost" data-act="fc-atraso">⤼ Dispensar atraso</button></div></div>`;
+}
+function openAtrasoCards() {
+  const grupos = atrasoPorDia();
+  if (!grupos.length) return toast('Nenhum flashcard atrasado. 👍');
+  const total = grupos.reduce((s, g) => s + g.cards.length, 0);
+  $('#modal').innerHTML = `<div class="modal-box">
+    <div class="modal-head"><h3>Dispensar atraso dos flashcards</h3><button class="icon-btn" data-act="close-modal">✕</button></div>
+    <div class="modal-body">
+      <p class="muted small" style="margin-top:0">Use quando deixou de revisar num dia porque fez muitas questões ou outro estudo.
+        Os cards daquele dia <b>deixam de ficar atrasados</b> e voltam para a fila, sem perder o progresso de cada um.
+        O dia conta como <b>folga</b> e não quebra seus dias seguidos.</p>
+      <div class="field"><label>Para onde vão os cards</label>
+        <select class="input" id="fc-dest">
+          <option value="1" ${total <= metas().diaria ? 'selected' : ''}>Tudo para hoje</option>
+          <option value="3" ${total > metas().diaria ? 'selected' : ''}>Espalhar em 3 dias (hoje, amanhã e depois)</option>
+        </select></div>
+      <div class="list">${grupos.map(g => `<div class="item">
+        <div class="grow"><div class="title">${diaTxt(g.k)}</div>
+          <div class="meta">${g.cards.length} ${g.cards.length === 1 ? 'card' : 'cards'} · atrasado há ${lateDays(g.cards[0])} ${lateDays(g.cards[0]) === 1 ? 'dia' : 'dias'}</div></div>
+        <button class="btn sm" data-act="fc-skip" data-k="${g.k}">⤼ Dispensar este dia</button></div>`).join('')}</div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-act="close-modal">Cancelar</button>
+      ${grupos.length > 1 ? `<button class="btn primary" data-act="fc-skip" data-k="all">Dispensar todos (${total})</button>` : ''}</div></div>`;
+  $('#modal').classList.remove('hidden');
+}
+async function dispensarAtraso(k) {
+  const grupos = atrasoPorDia().filter(g => k === 'all' || g.k === k);
+  const dias = Math.max(1, parseInt(($('#fc-dest') || {}).value) || 1);
+  const ctx = prioContext();
+  const cards = grupos.flatMap(g => g.cards).map(c => [c, cardPriority(c, ctx)]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  if (!cards.length) return;
+  const base = startOfDay() + 4 * HOUR;
+  cards.forEach((c, i) => { c.due = base + (i % dias) * DAY; c.updatedAt = Date.now(); }); // mais importantes ficam para hoje
+  await DB.put('cards', cards);
+  const p = P(); p.folgas = [...new Set([...folgas(), ...grupos.map(g => g.k)])].sort().slice(-120);
+  await savePmpe();
+  closeModal(); render();
+  toast(`${cards.length} ${cards.length === 1 ? 'card saiu' : 'cards saíram'} do atraso${dias > 1 ? ' (espalhados em 3 dias)' : ''}.`);
+}
+
 /* ------------------------- Eventos ------------------------- */
 const clampMeta = (k, n) => k === 'diaria' ? Math.min(500, Math.max(5, n)) : Math.min(3500, Math.max(10, n));
 document.addEventListener('click', e => {
@@ -205,6 +264,8 @@ document.addEventListener('click', e => {
     }
     case 'meta-step': setMetas({ [d.k]: clampMeta(d.k, metas()[d.k] + +d.v) }); break;
     case 'meta-set': setMetas({ [d.k]: clampMeta(d.k, +d.v) }); toast('Meta atualizada.'); break;
+    case 'fc-atraso': openAtrasoCards(); break;
+    case 'fc-skip': dispensarAtraso(d.k); break;
   }
 });
 document.addEventListener('change', e => {

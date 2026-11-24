@@ -184,7 +184,8 @@ async function logReview() {
 function streak() {
   const days = S.meta.stats.days; let n = 0; const d = new Date();
   if (!days[todayKey(d)]) d.setDate(d.getDate() - 1);
-  while (days[todayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
+  const folga = k => typeof ehFolga === 'function' && S.meta.pmpe && ehFolga(k); // dia dispensado não quebra a sequência
+  for (let k = todayKey(d); days[k] || folga(k); d.setDate(d.getDate() - 1), k = todayKey(d)) if (days[k]) n++;
   return n;
 }
 
@@ -279,9 +280,7 @@ function viewHome() {
   ${typeof SYNC_USER !== 'undefined' && !SYNC_USER && typeof sb !== 'undefined' && sb ? `<div class="alert warn" style="margin:0 0 14px"><div class="grow"><b>☁ Entre na nuvem</b>
     <span class="small">para ter tudo igual no computador e no iPhone, e para o Claude lançar os cards aqui sozinho.</span></div>
     <button class="btn" data-nav="conta">Entrar</button></div>` : ''}
-  ${late.length ? `<div class="alert bad" style="margin:0 0 14px"><div class="grow"><b>⚠ ${late.length} ${late.length === 1 ? 'flashcard atrasado' : 'flashcards atrasados'}</b>
-    <span class="small">(o mais antigo há ${maxLate} ${maxLate === 1 ? 'dia' : 'dias'}). Eles entram primeiro na revisão.</span></div>
-    <button class="btn" data-act="start" data-mode="due">Revisar agora</button></div>` : ''}
+  ${alertaAtraso()}
   <div class="stats">
     <div class="stat"><div class="v">${due}</div><div class="l">Pendentes hoje${late.length ? ` · <span class="late-txt">${late.length} atrasados</span>` : ''}</div></div>
     <div class="stat click" data-nav="metas"><div class="v">${today}<span class="muted" style="font-size:.55em">/${metas().diaria}</span></div><div class="l">Meta de hoje</div></div>
@@ -334,6 +333,7 @@ function viewReview() {
   return `
   <h1>Revisar</h1>
   <p class="sub">Escolha como quer estudar agora.</p>
+  ${alertaAtraso()}
   ${dailyBox()}
   <div class="grid-2">
     <div class="card-box"><h3 style="margin:0 0 4px">↻ Revisão geral</h3>
