@@ -189,9 +189,10 @@ function novaVersao(dias, nome, origem) {
 }
 const cicloAtual = () => { const c = P().ciclo; return c.versoes.find(v => v.id === c.atual) || c.versoes[c.versoes.length - 1]; };
 const blkKey = (r, d, b) => `${r}-${d}-${b}`;
+const SKIP = 'dispensado'; // bloco dispensado: não conta como estudado, mas tira o atraso
 function cycleProgress(v) {
   const total = RODADAS * v.dias.reduce((s, d) => s + d.length, 0);
-  return Object.values(v.feito).filter(Boolean).length / total;
+  return Object.values(v.feito).filter(x => x && x !== SKIP).length / total; // dispensado não conta como estudado
 }
 function posicao(v) {
   for (let r = 0; r < RODADAS; r++) for (let d = 0; d < v.dias.length; d++)
@@ -218,7 +219,8 @@ function atrasoBox(v, cs) {
     return `<div class="alert bad"><div class="grow"><b>⚠ ${diasTxt(cs.atraso)} de atraso no ciclo.</b><br>
       <span class="small">Pelo calendário, hoje seria ${cs.hoje >= RODADAS * 7 ? 'dia de simulado (o ciclo já devia ter terminado)' : `Semana ${r + 1} · Dia ${d + 1}`}. Você está na Semana ${cs.pos.r + 1} · Dia ${cs.pos.d + 1}.
       Recupere fazendo blocos extras, ou reorganize: o ciclo continua de onde parou e as datas (e o simulado) andam ${diasTxt(cs.atraso)} para frente.</span></div>
-      <button class="btn" data-act="cic-replan">Reorganizar a partir de hoje</button></div>`;
+      <div class="row"><button class="btn" data-act="cic-skip" data-r="${cs.pos.r}" data-d="${cs.pos.d}" title="Fez questões ou outro estudo no lugar? Tira o atraso deste dia">⤼ Dispensar Dia ${cs.pos.d + 1}</button>
+      <button class="btn" data-act="cic-replan">Reorganizar a partir de hoje</button></div></div>`;
   }
   if (cs.adiant) return `<div class="alert good">💪 Você está <b>${diasTxt(cs.adiant)} adiantado</b> no ciclo.</div>`;
   return '';
@@ -265,18 +267,21 @@ function dayCard(v, r, i, pos) {
   const d = v.dias[i], isNow = pos && pos.r === r && pos.d === i;
   const done = d.filter((_, b) => v.feito[blkKey(r, i, b)]).length;
   const date = cicloDate(v, r, i), late = done < d.length && date < startOfDay();
+  const skipped = d.some((_, b) => v.feito[blkKey(r, i, b)] === SKIP);
   return `<div class="day ${isNow ? 'now' : ''} ${done === d.length ? 'complete' : ''} ${late ? 'late' : ''}">
-    <div class="day-head"><b>Dia ${i + 1}</b><span class="muted small">${fmtDia(date)}</span>${late ? '<span class="pill bad">atrasado</span>' : isNow ? '<span class="pill due">próximo</span>' : ''}
+    <div class="day-head"><b>Dia ${i + 1}</b><span class="muted small">${fmtDia(date)}</span>${late ? '<span class="pill bad">atrasado</span>' : skipped ? '<span class="pill">dispensado</span>' : isNow ? '<span class="pill due">próximo</span>' : ''}
       <span class="spacer"></span><span class="muted small">${done}/${d.length}</span></div>
-    ${d.map((blk, b) => blockRow(v, r, i, b, blk)).join('')}</div>`;
+    ${d.map((blk, b) => blockRow(v, r, i, b, blk)).join('')}
+    ${late ? `<button class="btn sm skip-btn" data-act="cic-skip" data-r="${r}" data-d="${i}" title="Tira o atraso deste dia sem marcar como estudado">⤼ Dispensar este dia</button>`
+      : skipped ? `<button class="btn ghost sm skip-btn" data-act="cic-unskip" data-r="${r}" data-d="${i}">↺ Desfazer dispensa</button>` : ''}</div>`;
 }
 function blockRow(v, r, i, b, blk, withCards = false) {
-  const k = blkKey(r, i, b), ok = !!v.feito[k];
+  const k = blkKey(r, i, b), ok = !!v.feito[k], skip = v.feito[k] === SKIP;
   const nc = withCards && OBJ_IDS.includes(blk.m) ? blockCards(blk).length : 0;
-  return `<div class="blk ${ok ? 'ok' : ''}">
-    <button class="chk" data-act="cic-check" data-k="${k}" title="Marcar como feito">${ok ? '✓' : ''}</button>
+  return `<div class="blk ${ok ? 'ok' : ''} ${skip ? 'skip' : ''}">
+    <button class="chk" data-act="cic-check" data-k="${k}" title="${skip ? 'Dispensado (toque para desfazer)' : 'Marcar como feito'}">${skip ? '–' : ok ? '✓' : ''}</button>
     <span class="blk-bar" style="background:${blkInfo(blk.m).cor}"></span>
-    <div class="grow"><div class="tiny muted">Bloco ${b + 1}</div><div class="blk-l">${esc(blk.l)}</div>${blkTopics(blk.t)}
+    <div class="grow"><div class="tiny muted">Bloco ${b + 1}${skip ? ' · dispensado' : ''}</div><div class="blk-l">${esc(blk.l)}</div>${blkTopics(blk.t)}
       ${nc ? `<button class="btn sm blk-cards" data-act="blk-review" data-d="${i}" data-b="${b}">🃏 Revisar ${nc} cards deste bloco</button>` : ''}</div>
     <button class="icon-btn" data-act="cic-edit" data-d="${i}" data-b="${b}" title="Editar bloco">✏️</button></div>`;
 }
@@ -713,6 +718,21 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'cic-edit': openBlockEditor(+d.d, +d.b); break;
+    case 'cic-skip': {
+      const v = cicloAtual(), r = +d.r, i = +d.d;
+      const pend = v.dias[i].map((_, b) => blkKey(r, i, b)).filter(k => !v.feito[k]);
+      if (!pend.length) return;
+      if (!confirm(`Dispensar a Semana ${r + 1} · Dia ${i + 1}?\n\n${pend.length === 1 ? 'O bloco que falta fica' : `Os ${pend.length} blocos que faltam ficam`} como "dispensado": sai do atraso, mas não conta como matéria estudada.\nUse quando fez questões ou outro estudo no lugar. Dá para desfazer depois.`)) return;
+      pend.forEach(k => { v.feito[k] = SKIP; });
+      await savePmpe(); render(); toast(`Dia ${i + 1} dispensado. Atraso atualizado.`);
+      if (!posicao(v)) toast('Ciclo concluído! 🎉 Hora do simulado.');
+      break;
+    }
+    case 'cic-unskip': {
+      const v = cicloAtual(), r = +d.r, i = +d.d;
+      v.dias[i].forEach((_, b) => { const k = blkKey(r, i, b); if (v.feito[k] === SKIP) delete v.feito[k]; });
+      await savePmpe(); render(); toast('Dispensa desfeita.'); break;
+    }
     case 'blk-review': {
       const blk = cicloAtual().dias[+d.d][+d.b];
       startSession({ list: blockCards(blk), title: 'Bloco do ciclo · ' + (EDITAL.materias[blk.m]?.curto || blk.l) }); break;

@@ -151,6 +151,9 @@ h2 { font-size: 18px; margin: 28px 0 12px; }
 .lg-dot.ok { background: var(--facil); }
 .s-meta { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 0 auto 16px; max-width: 420px; text-align: left; }
 .stat.click { cursor: pointer; }
+.blk.skip { opacity: .55; }
+.blk.skip .chk { color: var(--muted); }
+.skip-btn { margin-top: 8px; width: 100%; }
 @media (max-width: 820px) { .daily-acts { width: 100%; } .daily-acts .btn { width: 100%; } }
 
 /* ---------- Botões ---------- */
