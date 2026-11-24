@@ -706,7 +706,8 @@ document.addEventListener('click', async e => {
     }
     case 'cic-week': S.cicloWeek = +d.v; render(); break;
     case 'cic-check': {
-      const v = cicloAtual(); v.feito[d.k] = !v.feito[d.k]; if (!v.feito[d.k]) delete v.feito[d.k];
+      // guarda a hora em que marcou: a revisão do dia usa as matérias dos blocos marcados hoje
+      const v = cicloAtual(); if (v.feito[d.k]) delete v.feito[d.k]; else v.feito[d.k] = Date.now();
       await savePmpe(); render();
       if (!posicao(v) && v.feito[d.k]) toast('Ciclo concluído! 🎉 Hora do simulado.');
       break;

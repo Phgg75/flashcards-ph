@@ -131,6 +131,28 @@ h2 { font-size: 18px; margin: 28px 0 12px; }
 .hero p { margin: 0; color: #b8b2e0; }
 .hero > div { flex: 1; min-width: 200px; }
 
+/* ---------- Revisão do dia e metas ---------- */
+.hero.daily { align-items: stretch; margin-bottom: 16px; }
+.hero.daily p { margin: 0 0 10px; }
+.daily-num { margin: 4px 0 8px; gap: 6px; }
+.daily-num b { font-size: 26px; letter-spacing: -.02em; }
+.daily-acts { flex: 0 0 auto !important; min-width: 0 !important; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.dia-pick { margin-top: 10px; }
+.dia-pick summary { cursor: pointer; color: var(--accent-2); }
+.mchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.mchip { border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); padding: 6px 11px; border-radius: 99px; cursor: pointer; font-size: 13px; }
+.mchip.on { border-color: var(--c); color: var(--text); background: color-mix(in srgb, var(--c) 22%, transparent); }
+.stepper { display: flex; gap: 8px; align-items: center; }
+.stepper .input { width: 90px; text-align: center; font-size: 20px; font-weight: 700; }
+.btn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-2); }
+.forecast.week .bar.ok { background: var(--facil); }
+.forecast.week .col.today .d { color: var(--text); font-weight: 600; }
+.lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--accent); vertical-align: -1px; }
+.lg-dot.ok { background: var(--facil); }
+.s-meta { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 0 auto 16px; max-width: 420px; text-align: left; }
+.stat.click { cursor: pointer; }
+@media (max-width: 820px) { .daily-acts { width: 100%; } .daily-acts .btn { width: 100%; } }
+
 /* ---------- Botões ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border);

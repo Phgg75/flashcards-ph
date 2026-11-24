@@ -195,6 +195,7 @@ const NAV = [
   { v: 'review', ico: '↻', label: 'Revisar', main: true, count: () => dueOf(null).length },
   { v: 'ciclo', ico: '◷', label: 'Ciclo', main: true },
   { v: 'folders', ico: '▤', label: 'Matérias', main: true },
+  { v: 'metas', ico: '🎯', label: 'Metas' },
   { v: 'errors', ico: '✎', label: 'Caderno de erros', short: 'Erros', count: () => dueOf(null, 'erro').length },
   { v: 'edital', ico: '☑', label: 'Edital' },
   { v: 'lembretes', ico: '🔔', label: 'Lembretes' },
@@ -261,7 +262,7 @@ function backBar() {
 }
 function render() {
   renderNav();
-  const v = { home: viewHome, review: viewReview, folders: viewFolders, errors: viewErrors, edital: viewEdital, ciclo: viewCiclo, gerar: viewGerar, import: viewGerar, conta: viewConta, lembretes: viewLembretes }[S.view] || viewHome;
+  const v = { home: viewHome, review: viewReview, folders: viewFolders, errors: viewErrors, edital: viewEdital, ciclo: viewCiclo, gerar: viewGerar, import: viewGerar, conta: viewConta, lembretes: viewLembretes, metas: viewMetas }[S.view] || viewHome;
   $('#view').innerHTML = backBar() + v();
   if (S.view === 'folders') bindSearch();
 }
@@ -283,17 +284,12 @@ function viewHome() {
     <button class="btn" data-act="start" data-mode="due">Revisar agora</button></div>` : ''}
   <div class="stats">
     <div class="stat"><div class="v">${due}</div><div class="l">Pendentes hoje${late.length ? ` · <span class="late-txt">${late.length} atrasados</span>` : ''}</div></div>
-    <div class="stat"><div class="v">${today}</div><div class="l">Revisados hoje</div></div>
+    <div class="stat click" data-nav="metas"><div class="v">${today}<span class="muted" style="font-size:.55em">/${metas().diaria}</span></div><div class="l">Meta de hoje</div></div>
     <div class="stat"><div class="v">${streak()}🔥</div><div class="l">Dias seguidos</div></div>
     <div class="stat"><div class="v">${S.cards.filter(c => c.type === 'erro').length}</div><div class="l">No caderno de erros</div></div>
   </div>
+  ${dailyBox()}
   ${homePmpe()}
-  <div class="hero">
-    <div><h3>${due ? `Você tem ${due} ${due === 1 ? 'card' : 'cards'} para revisar` : 'Tudo em dia! ✨'}</h3>
-    <p>${due ? `Revisão geral priorizando atrasados, o foco do ciclo de hoje${focusSummary() ? ` (${esc(focusSummary())})` : ''} e o que você errou no simulado.` : 'Quer reforçar? Faça uma revisão livre dos mais difíceis.'}</p></div>
-    ${due ? `<button class="btn primary lg" data-act="start" data-mode="due">Começar revisão geral</button>`
-          : `<button class="btn lg" data-act="start" data-mode="free" ${S.cards.length ? '' : 'disabled'}>Revisão livre</button>`}
-  </div>
   <h2>Matérias</h2>
   ${roots.length ? `<div class="list">${roots.map(folderItem).join('')}</div>`
     : `<div class="empty"><div class="big">📚</div>Nenhuma matéria ainda.<br><br>
@@ -338,6 +334,7 @@ function viewReview() {
   return `
   <h1>Revisar</h1>
   <p class="sub">Escolha como quer estudar agora.</p>
+  ${dailyBox()}
   <div class="grid-2">
     <div class="card-box"><h3 style="margin:0 0 4px">↻ Revisão geral</h3>
       <p class="muted small" style="margin:0 0 14px">Todos os cards pendentes de todas as matérias, com os mais difíceis primeiro.</p>
@@ -677,13 +674,13 @@ function refresh() { if (S.session) renderSession(); else render(); }
 
 /* ============================ Sessão de revisão ============================ */
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function startSession({ mode = 'due', folderId = null, type = 'all', list: given = null, title = null }) {
+function startSession({ mode = 'due', folderId = null, type = 'all', list: given = null, title = null, keepOrder = false }) {
   let list = given ? given.slice() : mode === 'due' ? dueOf(folderId, type) : cardsIn(folderId, type).slice();
   if (!list.length) return toast(given ? 'Nenhum card aqui ainda.' : mode === 'due' ? 'Nada pendente aqui! 🎉' : 'Nenhum card aqui ainda.');
   // Ordem inteligente (estudo.js): atrasados, assuntos em foco no ciclo de hoje,
   // assuntos que você errou no simulado e dificuldade do card. Tudo local, sem IA.
   const ctx = prioContext(); const pr = new Map(list.map(c => [c.id, cardPriority(c, ctx)]));
-  list = shuffle(list).sort((a, b) => pr.get(b.id) - pr.get(a.id));
+  if (!keepOrder) list = shuffle(list).sort((a, b) => pr.get(b.id) - pr.get(a.id));
   const f = folderById(folderId);
   S.session = {
     title: title || (mode === 'due' ? 'Revisão' : 'Revisão livre') + (type === 'erro' ? ' · Caderno de erros' : '') + ' · ' + (f ? f.name : 'Geral'),
@@ -708,8 +705,12 @@ function renderSession() {
       <div class="progress"><div style="width:100%"></div></div>
       <div class="s-body"><div class="s-card done"><div class="big">🎉</div><h1>Sessão concluída!</h1>
       <p class="sub">${s.done} revisões em ${s.total} cards.</p>
-      <div class="row" style="justify-content:center;margin-bottom:24px">${DIFFS.map(d => `<span class="pill d-${d.k}">${d.short}: ${r[d.k]}</span>`).join('')}</div>
-      <button class="btn primary lg" data-act="end-session">Voltar</button></div></div>`;
+      <div class="row" style="justify-content:center;margin-bottom:18px">${DIFFS.map(d => `<span class="pill d-${d.k}">${d.short}: ${r[d.k]}</span>`).join('')}</div>
+      ${typeof metas === 'function' && S.meta.pmpe ? (() => { const mt = metas(), h = feitosHoje(), w = feitosSemana(); return `<div class="s-meta">
+        <div class="row"><b>Hoje: ${h}/${mt.diaria}</b><span class="spacer"></span><span class="muted small">Semana: ${w}/${mt.semanal}</span></div>${metaBar(h, mt.diaria)}
+        <p class="small" style="margin:8px 0 0">${h >= mt.diaria ? '🎉 Meta diária batida! Quer revisar mais um pouco?' : `Faltam <b>${mt.diaria - h}</b> cards para bater a meta de hoje.`}</p></div>
+        <div class="row" style="justify-content:center;margin-bottom:12px"><button class="btn primary lg" data-act="dia-again">${h >= mt.diaria ? `+ Revisar mais ${MAIS_LOTE}` : `Continuar (faltam ${mt.diaria - h})`}</button></div>`; })() : ''}
+      <button class="btn ${typeof metas === 'function' ? '' : 'primary'} lg" data-act="end-session">Voltar</button></div></div>`;
     return;
   }
   const isErr = c.type === 'erro';
@@ -746,14 +747,29 @@ function renderSession() {
 }
 async function rate(r) {
   const s = S.session, c = currentCard(); if (!c) return;
-  const next = schedule(c, r);
+  const now = Date.now();
+  const primeiraHoje = !(c.lastReview >= startOfDay()); // cada card conta 1 vez por dia na meta
+  let next = schedule(c, r);
+  // Revisou antes da hora (revisão do dia / revisar mais) e achou Médio/Fácil:
+  // mantém a data que o card já tinha, para não esticar o intervalo sem motivo.
+  if (c.due > endOfToday() && (r === 'medio' || r === 'facil')) {
+    Object.assign(c, { difficulty: r, lastReview: now, updatedAt: now });
+    await DB.put('cards', c); if (primeiraHoje) logReview();
+    s.results[r]++; s.done++; s.pos++; s.flipped = false;
+    renderSession(); $('.s-body') && ($('.s-body').scrollTop = 0); return;
+  }
   // Assunto fraco (errado no simulado / matéria com baixo acerto) volta até 30% mais cedo
   if (r !== 'extremo' && next.interval > 1) {
     next.interval = Math.max(1, Math.round(next.interval * cardFactor(c)));
     next.due = startOfDay() + next.interval * DAY + 4 * HOUR;
   }
+  // Revisou antes da hora e achou Difícil: volta mais cedo do que estava previsto
+  if (r === 'dificil' && c.due > endOfToday()) {
+    next.interval = Math.max(1, Math.round((c.interval || 1) / 2));
+    next.due = startOfDay() + next.interval * DAY + 4 * HOUR;
+  }
   Object.assign(c, next); c.updatedAt = Date.now();
-  await DB.put('cards', c); logReview();
+  await DB.put('cards', c); if (primeiraHoje) logReview();
   s.results[r]++; s.done++;
   // Extremamente difícil volta no fim da sessão (até 3 vezes)
   if (r === 'extremo' && (s.again[c.id] || 0) < 3) { s.again[c.id] = (s.again[c.id] || 0) + 1; s.queue.push(c.id); }

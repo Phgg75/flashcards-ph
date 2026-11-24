@@ -1,6 +1,6 @@
 // Service worker: deixa o app funcionando offline depois da primeira abertura.
-const CACHE = 'flashcards-ph-v10';
-const FILES = ['./', './index.html', './styles.css', './edital-pmpe.js', './estudo.js', './gerar.js', './app.js', './sync.js', './lembretes.js', './icon-180.png', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'flashcards-ph-v11';
+const FILES = ['./', './index.html', './styles.css', './edital-pmpe.js', './estudo.js', './gerar.js', './app.js', './sync.js', './lembretes.js', './metas.js', './icon-180.png', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
